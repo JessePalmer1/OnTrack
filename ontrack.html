@@ -1129,9 +1129,9 @@
       $("addToday").placeholder = ui.addRepeat ? "Add a goal for every day" : "Add something for this day";
       return;
     }
-    if (el.id === "addTodayBtn") { submit("addToday", "day"); return; }
-    if (el.id === "addWeekBtn") { submit("addWeek", "week"); return; }
-    if (el.id === "addGoalBtn") { submit("addGoal", "long"); return; }
+    if (el.id === "addTodayBtn") { submit("addToday", "day", false); return; }
+    if (el.id === "addWeekBtn") { submit("addWeek", "week", false); return; }
+    if (el.id === "addGoalBtn") { submit("addGoal", "long", false); return; }
   });
 
   function step(n) {
@@ -1140,17 +1140,19 @@
     render();
   }
 
-  function submit(inputId, kind) {
+  /* Tapping + means "that's the one I wanted" — drop focus so the keyboard
+     closes. Pressing Enter keeps focus, for typing several items in a row. */
+  function submit(inputId, kind, keepFocus) {
     var el = $(inputId);
     if (!el.value.trim()) { el.focus(); return; }
     quickAdd(kind, el.value);
     el.value = "";
-    el.focus();
+    if (keepFocus) el.focus(); else el.blur();
   }
 
   [["addToday", "day"], ["addWeek", "week"], ["addGoal", "long"]].forEach(function (p) {
     $(p[0]).addEventListener("keydown", function (e) {
-      if (e.key === "Enter") { e.preventDefault(); submit(p[0], p[1]); }
+      if (e.key === "Enter") { e.preventDefault(); submit(p[0], p[1], true); }
     });
   });
 
