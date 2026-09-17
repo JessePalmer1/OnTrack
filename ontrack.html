@@ -8,6 +8,7 @@
     --accent:#0e7c66; --accent-soft:#dceee8; --accent-ink:#0a5a4a;
     --warn:#c2740b; --warn-soft:#fbeed8;
     --crit:#b23a30; --crit-soft:#fbe3e0;
+    --p0:#4f9a3d; --p1:#c69106; --p2:#dd6f18; --p3:#c33526;
     --shadow:0 -8px 30px rgba(20,32,36,.16);
     --sans:"Public Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
     --disp:"Archivo","Public Sans",-apple-system,sans-serif;
@@ -22,6 +23,7 @@
       --accent:#2fbf9c; --accent-soft:#14312a; --accent-ink:#8fe0cd;
       --warn:#e0a34a; --warn-soft:#332616;
       --crit:#e8776a; --crit-soft:#361d1a;
+      --p0:#6fc257; --p1:#e8bc3c; --p2:#f08a3c; --p3:#ef6a5a;
       --shadow:0 -8px 30px rgba(0,0,0,.5);
     }
   }
@@ -32,6 +34,7 @@
     --accent:#2fbf9c; --accent-soft:#14312a; --accent-ink:#8fe0cd;
     --warn:#e0a34a; --warn-soft:#332616;
     --crit:#e8776a; --crit-soft:#361d1a;
+    --p0:#6fc257; --p1:#e8bc3c; --p2:#f08a3c; --p3:#ef6a5a;
     --shadow:0 -8px 30px rgba(0,0,0,.5);
   }
   *{box-sizing:border-box}
@@ -74,8 +77,17 @@
   .panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:3px 14px}
   .empty{color:var(--muted);font-size:14px;padding:13px 0}
 
-  .row{display:grid;grid-template-columns:30px 1fr auto;gap:10px;align-items:start;padding:11px 0}
+  .row{
+    display:grid;grid-template-columns:14px 28px 1fr auto;gap:9px;align-items:start;padding:11px 0;
+    -webkit-touch-callout:none;-webkit-user-select:none;user-select:none
+  }
   .row+.row{border-top:1px solid var(--line)}
+  .stripe{align-self:stretch;width:14px;display:grid;place-items:center;padding:1px 0}
+  .stripe i{display:block;width:5px;height:100%;min-height:21px;border-radius:3px;background:var(--p0)}
+  .stripe.p1 i{background:var(--p1)}
+  .stripe.p2 i{background:var(--p2)}
+  .stripe.p3 i{background:var(--p3)}
+  .row.done .stripe i{opacity:.3}
   .box{
     width:23px;height:23px;margin-top:1px;border-radius:50%;border:2px solid var(--line-2);
     display:grid;place-items:center;flex:none;transition:background .13s,border-color .13s
@@ -96,6 +108,7 @@
   .chip.soon{background:var(--warn-soft);color:var(--warn)}
   .chip.late{background:var(--crit-soft);color:var(--crit)}
   .chip.link{background:transparent;border:1px solid var(--line-2)}
+  .chip.carried{background:transparent;border:1px dashed var(--line-2);color:var(--faint)}
   .right{display:flex;align-items:center;gap:8px;padding-top:2px}
   .minibtn{
     font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;
@@ -150,7 +163,10 @@
 
   .goal{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:13px 14px;margin-bottom:10px}
   .goal.done{opacity:.62}
-  .ghead{display:grid;grid-template-columns:30px 1fr auto;gap:10px;align-items:start}
+  .ghead{
+    display:grid;grid-template-columns:14px 28px 1fr auto;gap:9px;align-items:start;
+    -webkit-touch-callout:none;-webkit-user-select:none;user-select:none
+  }
   .gname{font-family:var(--disp);font-weight:600;font-size:16px;letter-spacing:-.005em;word-break:break-word;text-align:left;width:100%}
   .goal.done .gname{text-decoration:line-through;color:var(--faint)}
   .goal.done .box{background:var(--accent);border-color:var(--accent)}
@@ -190,6 +206,19 @@
     font-family:var(--mono);font-size:10.5px;color:var(--muted)
   }
   .wd button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+  .pri{display:flex;gap:6px}
+  .pri button{
+    flex:1;min-width:0;padding:8px 0 9px;border-radius:9px;border:1px solid var(--line-2);
+    font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);
+    display:flex;flex-direction:column;align-items:center;gap:6px
+  }
+  .pri button i{display:block;width:60%;height:5px;border-radius:3px}
+  .pri button.s0 i{background:var(--p0)}
+  .pri button.s1 i{background:var(--p1)}
+  .pri button.s2 i{background:var(--p2)}
+  .pri button.s3 i{background:var(--p3)}
+  .pri button[aria-pressed="true"]{background:var(--surface-2);border-color:var(--ink-2);color:var(--ink)}
+  .pri button[aria-pressed="true"] i{width:100%;height:6px}
   .sw{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--line);margin-top:13px}
   .sw .t{font-size:14.5px}
   .sw .d{font-size:12.5px;color:var(--muted);margin-top:1px}
@@ -375,6 +404,19 @@
   }
 
   var CHECK = '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></svg>';
+  var PRI = ["Low", "Medium", "High", "Urgent"];
+
+  /* Priority 0-3: green, yellow, orange, red. Unfinished one-off tasks gain a
+     level for each day they slip, so what you keep putting off turns red. */
+  function priOf(g) {
+    var n = Math.round(+(g && g.pri) || 0);
+    return n < 0 ? 0 : n > 3 ? 3 : n;
+  }
+  function stripeHTML(g) {
+    var p = priOf(g);
+    return '<button class="stripe p' + p + '" data-pri="' + g.id +
+      '" aria-label="' + PRI[p] + ' priority. Tap to change." title="' + PRI[p] + ' priority"><i></i></button>';
+  }
 
   /* ---------- write queue: one write at a time per document ---------- */
   var queues = new Map();
@@ -414,17 +456,23 @@
     return out;
   }
   function scheduled(date) {
-    var wd = dow(date), out = [];
+    var wd = dow(date), out = [], isToday = date === today();
     goals.forEach(function (g, id) {
       if (g.type !== "day") return;
       if (g.repeat) {
         if (g.start && g.start > date) return;
         if (Array.isArray(g.wd) && g.wd.length && g.wd.indexOf(wd) < 0) return;
-      } else if (g.date !== date) return;
+      } else if (g.date !== date) {
+        // A running list: an unfinished one-off from an earlier day belongs to today.
+        if (!(isToday && g.date && g.date < date && !isDone(id, g.date))) return;
+      }
       out.push(Object.assign({ id: id }, g));
     });
     out.sort(function (a, b) {
-      return (b.repeat ? 1 : 0) - (a.repeat ? 1 : 0) || (a.order || 0) - (b.order || 0);
+      return (isDone(a.id, date) ? 1 : 0) - (isDone(b.id, date) ? 1 : 0) ||
+        priOf(b) - priOf(a) ||
+        (b.carried || 0) - (a.carried || 0) ||
+        (a.order || 0) - (b.order || 0);
     });
     return out;
   }
@@ -433,9 +481,16 @@
     return !!(d && d.done && d.done[id]);
   }
   function dayScore(date) {
-    var list = scheduled(date), n = 0;
-    for (var i = 0; i < list.length; i++) if (isDone(list[i].id, date)) n++;
-    return { done: n, total: list.length };
+    var list = scheduled(date), i, n = 0;
+    if (date === today()) {
+      for (i = 0; i < list.length; i++) if (isDone(list[i].id, date)) n++;
+      return { done: n, total: list.length };
+    }
+    // Past days keep the score they earned: a task that slipped away to today
+    // stays counted against the day it was missed on.
+    var stored = days.get(date), map = (stored && stored.done) || {}, k;
+    for (k in map) if (map[k]) n++;
+    return { done: n, total: Math.max(list.length, (stored && stored.total) || 0, n) };
   }
   function streak() {
     var d = today(), n = 0, first = dayScore(d);
@@ -464,7 +519,9 @@
     goals.forEach(function (g, id) {
       if ((g.type === "long" || g.type === "week") && g.due && !g.done) out.push(Object.assign({ id: id }, g));
     });
-    out.sort(function (a, b) { return a.due < b.due ? -1 : a.due > b.due ? 1 : 0; });
+    out.sort(function (a, b) {
+      return (a.due < b.due ? -1 : a.due > b.due ? 1 : 0) || priOf(b) - priOf(a);
+    });
     return out;
   }
   function overdueCount() {
@@ -501,6 +558,59 @@
     render();
     write("goals/" + id, null);
   }
+  function setPri(id, n) {
+    var g = goals.get(id);
+    if (!g) return;
+    n = n < 0 ? 0 : n > 3 ? 3 : n;
+    if (n === priOf(g)) return;
+    saveGoal(id, Object.assign({}, g, { pri: n }));
+    toast(PRI[n] + " priority");
+  }
+  function raisePri(id) {
+    var g = goals.get(id);
+    if (!g) return;
+    if (priOf(g) === 3) { toast("Already the highest priority"); return; }
+    setPri(id, priOf(g) + 1);
+  }
+  function cyclePri(id) {
+    var g = goals.get(id);
+    if (!g) return;
+    var n = (priOf(g) + 1) % 4;
+    saveGoal(id, Object.assign({}, g, { pri: n }));
+    toast(PRI[n] + " priority");
+  }
+
+  /* Anything one-off you didn't finish follows you into the next day, one
+     priority level higher for every day it slipped. */
+  var rolled = false;
+  function rollover() {
+    if (rolled || !db) return;
+    rolled = true;
+    var t = today(), moves = [];
+    goals.forEach(function (g, id) {
+      if (g.type !== "day" || g.repeat) return;
+      if (!g.date || g.date >= t) return;
+      if (isDone(id, g.date)) return;
+      moves.push({ id: id, slipped: Math.max(1, diff(t, g.date)) });
+    });
+    if (!moves.length) return;
+    moves.forEach(function (m) {
+      var g = goals.get(m.id);
+      if (!g) return;
+      var body = Object.assign({}, g, {
+        date: t,
+        pri: Math.min(3, priOf(g) + m.slipped),
+        carried: (g.carried || 0) + m.slipped
+      });
+      goals.set(m.id, body);
+      write("goals/" + m.id, body);
+    });
+    render();
+    toast(moves.length === 1
+      ? "1 unfinished task carried into today"
+      : moves.length + " unfinished tasks carried into today");
+  }
+
   function quickAdd(kind, text) {
     text = text.trim();
     if (!text) return;
@@ -508,18 +618,18 @@
     if (kind === "day") {
       body = {
         type: "day", title: text, notes: "", order: Date.now(), createdAt: now,
-        repeat: ui.addRepeat, wd: [], parentId: null
+        repeat: ui.addRepeat, wd: [], parentId: null, pri: 0, carried: 0
       };
       if (ui.addRepeat) body.start = ui.day; else body.date = ui.day;
     } else if (kind === "week") {
       body = {
         type: "week", title: text, notes: "", order: Date.now(), createdAt: now,
-        weekStart: ui.week, due: null, done: false, parentId: null
+        weekStart: ui.week, due: null, done: false, parentId: null, pri: 0
       };
     } else {
       body = {
         type: "long", title: text, notes: "", order: Date.now(), createdAt: now,
-        due: null, done: false, parentId: null
+        due: null, done: false, parentId: null, pri: 0
       };
     }
     saveGoal(id, body);
@@ -534,6 +644,9 @@
       if (Array.isArray(g.wd) && g.wd.length && g.wd.length < 7) lbl = g.wd.slice().sort().map(function (n) { return DOW[n][0]; }).join("");
       out += '<span class="chip">&#8635; ' + esc(lbl) + "</span>";
     }
+    if (g.type === "day" && g.carried) {
+      out += '<span class="chip carried">carried &times;' + g.carried + "</span>";
+    }
     if (g.parentId && goals.has(g.parentId)) {
       out += '<span class="chip link">' + esc(goals.get(g.parentId).title) + "</span>";
     }
@@ -544,6 +657,7 @@
     opts = opts || {};
     var hook = g.type === "day" ? "data-check" : "data-goalcheck";
     return '<div class="row' + (done ? " done" : "") + '">' +
+      stripeHTML(g) +
       '<button class="box" ' + hook + '="' + g.id + '" data-date="' + (opts.date || "") + '" aria-label="' +
         (done ? "Uncheck " : "Check off ") + esc(g.title) + '" aria-pressed="' + (done ? "true" : "false") + '">' + CHECK + "</button>" +
       '<button class="tap" data-edit="' + g.id + '">' +
@@ -598,25 +712,6 @@
       listPanel(list, function (g) { return isDone(g.id, date); },
         { date: date, empty: "Add your first item below, or set a daily goal that repeats." });
 
-    if (date === today()) {
-      var left = [], t = today();
-      goals.forEach(function (g, id) {
-        if (g.type === "day" && !g.repeat && g.date && g.date < t && !isDone(id, g.date)) {
-          left.push(Object.assign({ id: id }, g));
-        }
-      });
-      left.sort(function (a, b) { return a.date < b.date ? -1 : 1; });
-      if (left.length) {
-        html += label("Unfinished from earlier", left.length) +
-          '<div class="panel">' + left.map(function (g) {
-            return rowHTML(Object.assign({}, g, { due: g.date }), false, {
-              date: g.date,
-              action: '<button class="minibtn" data-roll="' + g.id + '">&rarr; Today</button>'
-            });
-          }).join("") + "</div>";
-      }
-    }
-
     var soon = dated().filter(function (g) { return diff(g.due, date) <= 7; }).slice(0, 4);
     if (soon.length) {
       html += label("Due within a week", soon.length) +
@@ -649,6 +744,8 @@
     mine.sort(function (a, b) {
       var byDone = (a.done ? 1 : 0) - (b.done ? 1 : 0);
       if (byDone) return byDone;
+      var byPri = priOf(b) - priOf(a);
+      if (byPri) return byPri;
       var ad = a.due || "9999", bd = b.due || "9999";
       if (ad !== bd) return ad < bd ? -1 : 1;
       return (a.order || 0) - (b.order || 0);
@@ -696,6 +793,8 @@
     var list = all("long");
     list.sort(function (a, b) {
       if (!!a.done !== !!b.done) return a.done ? 1 : -1;
+      var byPri = priOf(b) - priOf(a);
+      if (byPri) return byPri;
       if (a.due && b.due) return a.due < b.due ? -1 : 1;
       if (a.due) return -1;
       if (b.due) return 1;
@@ -716,6 +815,7 @@
       var open = ui.open.has(g.id);
       html += '<div class="goal' + (g.done ? " done" : "") + '">' +
         '<div class="ghead">' +
+          stripeHTML(g) +
           '<button class="box" data-goalcheck="' + g.id + '" aria-pressed="' + (g.done ? "true" : "false") +
             '" aria-label="Mark ' + esc(g.title) + ' complete">' + CHECK + "</button>" +
           '<button class="gname" data-edit="' + g.id + '">' + esc(g.title) +
@@ -776,7 +876,7 @@
 
   /* ---------- header + tabs ---------- */
   var TIPS = {
-    today: "Tap a circle to check off. Tap the text to edit.",
+    today: "Tap a circle to check off, the text to edit. Press and hold a task to raise its priority, or tap its colour bar to cycle green → red → green. Anything you don't finish moves to tomorrow one level higher.",
     week: "Tap any day in the ribbon to jump to it.",
     goals: "Link weekly and daily goals to a long-term goal to fill its progress bar.",
     up: "Due dates from your weekly and long-term goals, soonest first."
@@ -883,6 +983,12 @@
       }
     }
 
+    html += '<div class="fld"><label>Priority</label><div class="pri">' +
+      PRI.map(function (l, i) {
+        return '<button class="s' + i + '" data-setpri="' + i + '" aria-pressed="' +
+          (priOf(d) === i ? "true" : "false") + '"><i></i>' + l + "</button>";
+      }).join("") + "</div></div>";
+
     if (d.type !== "long") {
       html += '<div class="fld"><label for="fParent">Part of</label><select id="fParent">' +
         '<option value="">Nothing — standalone</option>' +
@@ -917,6 +1023,7 @@
     var d = sheet.d, id = sheet.id;
     if (!d.title.trim()) { toast("Give it a name first"); return; }
     d.title = d.title.trim();
+    d.pri = priOf(d);
     if (d.type === "day") {
       d.due = null; d.done = false; delete d.weekStart;
       if (d.repeat) { d.start = d.start || today(); delete d.date; }
@@ -933,12 +1040,44 @@
   }
 
   /* ---------- events ---------- */
+  /* Press and hold a task to raise its priority; the colour bar cycles through
+     all four levels, which is how you bring one back down in one tap. */
+  var press = { timer: null, id: null, x: 0, y: 0, fired: false };
+  function pressEnd() {
+    if (press.timer) { clearTimeout(press.timer); press.timer = null; }
+  }
+  document.addEventListener("pointerdown", function (e) {
+    pressEnd();
+    // Clear it on every press, so a hold can only ever swallow its own click.
+    press.fired = false;
+    var t = e.target.closest ? e.target.closest("[data-edit]") : null;
+    if (!t) return;
+    press.id = t.dataset.edit;
+    press.x = e.clientX;
+    press.y = e.clientY;
+    press.timer = setTimeout(function () {
+      press.timer = null;
+      press.fired = true;
+      raisePri(press.id);
+    }, 450);
+  });
+  document.addEventListener("pointermove", function (e) {
+    if (!press.timer) return;
+    if (Math.abs(e.clientX - press.x) > 10 || Math.abs(e.clientY - press.y) > 10) pressEnd();
+  });
+  document.addEventListener("pointerup", pressEnd);
+  document.addEventListener("pointercancel", pressEnd);
+  window.addEventListener("scroll", pressEnd, true);
+
   document.addEventListener("click", function (e) {
+    // A completed long-press must not also open the editor.
+    if (press.fired) { press.fired = false; return; }
     var el = e.target.closest ? e.target.closest("button,[data-close]") : null;
     if (!el) return;
     var ds = el.dataset || {};
 
     if (ds.close) { closeSheet(); return; }
+    if (ds.setpri != null && sheet) { readSheet(); sheet.d.pri = +ds.setpri; drawSheet(); return; }
     if (el.id === "fSave") { commitSheet(); return; }
     if (el.id === "fDel") {
       if (!sheet) return;
@@ -958,15 +1097,10 @@
       return;
     }
 
+    if (ds.pri) { cyclePri(ds.pri); return; }
     if (ds.check) { toggleDay(ds.check, ds.date || ui.day); return; }
     if (ds.goalcheck) { toggleGoal(ds.goalcheck); return; }
     if (ds.edit) { openSheet(ds.edit); return; }
-    if (ds.roll) {
-      var r = goals.get(ds.roll);
-      if (r) saveGoal(ds.roll, Object.assign({}, r, { date: today() }));
-      toast("Moved to today");
-      return;
-    }
     if (ds.pull) {
       var w = goals.get(ds.pull);
       if (w) saveGoal(ds.pull, Object.assign({}, w, { weekStart: monday(today()) }));
@@ -1033,6 +1167,8 @@
       ui.week = monday(ui.day);
       seenDay = now;
       render();
+      rolled = false;
+      rollover();
     }
   }, 60000);
 
@@ -1053,11 +1189,18 @@
         return;
       }
       phase = "ready";
+      // Carrying tasks forward needs both collections: goals to know what is
+      // outstanding, days to know what was already ticked off.
+      var gotGoals = false, gotDays = false;
+      function maybeRoll() { if (gotGoals && gotDays) rollover(); }
+
       db.collection("goals").onSnapshot(function (snap) {
         var next = new Map();
         snap.docs.forEach(function (doc) { next.set(doc.id, doc.data()); });
         goals = next;
         render();
+        gotGoals = true;
+        maybeRoll();
       }, function () { toast("Lost the connection to your goals. Reload to reconnect."); });
 
       db.collection("days").orderBy("date", "desc").limit(180).onSnapshot(function (snap) {
@@ -1068,6 +1211,8 @@
         });
         days = next;
         render();
+        gotDays = true;
+        maybeRoll();
       }, function () { /* non-fatal: checkmarks fall back to the next reload */ });
     });
   }
