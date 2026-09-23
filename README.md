@@ -35,6 +35,8 @@ browser, so checking something off on the phone shows up everywhere.
 - **Automatic carry-over** — a one-off task you don't finish moves itself onto the next
   day, so the list keeps running until the work is actually done. Unfinished weekly goals
   surface on the current week with a `→ This week` button.
+- **Assignments come to you** — a weekly goal with a due date joins the daily list at
+  top priority from the day before it's due, so a deadline can't hide on another tab.
 - **Four priority levels** — low, medium, high, urgent, shown as a colour bar on the left
   of each row: green → yellow → orange → red. Lists sort by priority, highest first.
   A carried task gains a level for every day it slipped, so what you keep putting off
@@ -54,6 +56,18 @@ Three ways to change it, fastest first:
 
 A carried task also shows a `carried ×2` chip counting the days it has slipped.
 
+## Assignments on the daily list
+
+A weekly goal with a due date appears on Today, at top priority, once it's within a day
+of being due (and it stays there while overdue). It is the *same record*, not a copy —
+borrowed into the list for display — so ticking it off on Today marks the weekly goal
+done everywhere, and there is nothing to keep in sync or clean up. Borrowed rows carry a
+`week` tag, show their due date, and have a fixed red bar that isn't tappable.
+
+One deliberate asymmetry in the day's count: a goal due **tomorrow** is a heads-up and
+does not hold the day's score open, while one due **today or overdue** is today's work
+and counts toward the ring and the streak.
+
 ## Editing
 
 Tap any item's text to open the editor sheet: name, notes, kind (daily / weekly /
@@ -70,6 +84,9 @@ Google Fonts. State lives in the artifact's `db` capability (declared at publish
   `weekStart` (Monday); day carries either `repeat` + `start` + `wd` (weekday mask, empty
   = every day) or a single `date`; any non-long goal may carry `parentId`. `pri` is 0-3
   (low→urgent, default 0) and `carried` counts the days a task has slipped.
+  A weekly goal is never copied into a day; `scheduled()` borrows it into the returned
+  list with `borrowed: true` and `pri: 3`, and `dayDone`/`countsOn` decide how it is
+  ticked and scored.
 - `days/<YYYY-MM-DD>` — one document per day: `{ date, done: { goalId: true }, total }`.
   Daily check-offs are per date, so repeating goals keep a real history without
   duplicating a document per goal per day.

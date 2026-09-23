@@ -414,6 +414,8 @@
   }
   function stripeHTML(g) {
     var p = priOf(g);
+    // Borrowed rows sit at max priority by definition — nothing to cycle.
+    if (g.borrowed) return '<span class="stripe p3" title="Due within a day"><i></i></span>';
     return '<button class="stripe p' + p + '" data-pri="' + g.id +
       '" aria-label="' + PRI[p] + ' priority. Tap to change." title="' + PRI[p] + ' priority"><i></i></button>';
   }
@@ -468,8 +470,17 @@
       }
       out.push(Object.assign({ id: id }, g));
     });
+    // A weekly goal comes due: borrow it onto the day's list at top priority
+    // from the day before it's due. Same record, shown in two places.
+    goals.forEach(function (g, id) {
+      if (g.type !== "week" || !g.due) return;
+      var dd = diff(g.due, date);
+      if (dd > 1) return;
+      if (dd < 0 && !isToday) return;
+      out.push(Object.assign({ id: id }, g, { pri: 3, borrowed: true }));
+    });
     out.sort(function (a, b) {
-      return (isDone(a.id, date) ? 1 : 0) - (isDone(b.id, date) ? 1 : 0) ||
+      return (dayDone(a, date) ? 1 : 0) - (dayDone(b, date) ? 1 : 0) ||
         priOf(b) - priOf(a) ||
         (b.carried || 0) - (a.carried || 0) ||
         (a.order || 0) - (b.order || 0);
@@ -480,17 +491,38 @@
     var d = days.get(date);
     return !!(d && d.done && d.done[id]);
   }
+  /* A weekly goal borrowed onto a day carries its own done flag; real day
+     items are ticked off per date. */
+  function dayDone(g, date) {
+    return g.borrowed ? !!g.done : isDone(g.id, date);
+  }
+  /* An assignment due tomorrow is a heads-up, so it doesn't hold the day's
+     count open. Once it's due today (or late) it is today's work and counts. */
+  function countsOn(g, date) {
+    return !g.borrowed || diff(g.due, date) <= 0;
+  }
+  function scheduledCount(date) {
+    var list = scheduled(date), i, n = 0;
+    for (i = 0; i < list.length; i++) if (countsOn(list[i], date)) n++;
+    return n;
+  }
   function dayScore(date) {
     var list = scheduled(date), i, n = 0;
     if (date === today()) {
-      for (i = 0; i < list.length; i++) if (isDone(list[i].id, date)) n++;
-      return { done: n, total: list.length };
+      var tot = 0;
+      for (i = 0; i < list.length; i++) {
+        if (!countsOn(list[i], date)) continue;
+        tot++;
+        if (dayDone(list[i], date)) n++;
+      }
+      return { done: n, total: tot };
     }
     // Past days keep the score they earned: a task that slipped away to today
     // stays counted against the day it was missed on.
-    var stored = days.get(date), map = (stored && stored.done) || {}, k;
+    var stored = days.get(date), map = (stored && stored.done) || {}, k, live = 0;
     for (k in map) if (map[k]) n++;
-    return { done: n, total: Math.max(list.length, (stored && stored.total) || 0, n) };
+    for (i = 0; i < list.length; i++) if (countsOn(list[i], date)) live++;
+    return { done: n, total: Math.max(live, (stored && stored.total) || 0, n) };
   }
   function streak() {
     var d = today(), n = 0, first = dayScore(d);
@@ -535,7 +567,7 @@
     var d = days.get(date) || { date: date, done: {} };
     var done = Object.assign({}, d.done || {});
     if (done[id]) delete done[id]; else done[id] = true;
-    var body = { date: date, done: done, total: scheduled(date).length };
+    var body = { date: date, done: done, total: scheduledCount(date) };
     days.set(date, body);
     render();
     write("days/" + date, body);
@@ -660,7 +692,7 @@
       stripeHTML(g) +
       '<button class="box" ' + hook + '="' + g.id + '" data-date="' + (opts.date || "") + '" aria-label="' +
         (done ? "Uncheck " : "Check off ") + esc(g.title) + '" aria-pressed="' + (done ? "true" : "false") + '">' + CHECK + "</button>" +
-      '<button class="tap" data-edit="' + g.id + '">' +
+      '<button class="tap" data-edit="' + g.id + '"' + (g.borrowed ? ' data-nopri="1"' : "") + ">" +
         '<span class="name">' + esc(g.title) + "</span>" +
         (g.notes ? '<span class="note">' + esc(g.notes) + "</span>" : "") +
         (function () { var c = chipsFor(g, done); return c ? '<span class="meta">' + c + "</span>" : ""; })() +
@@ -709,10 +741,17 @@
 
     var list = scheduled(date);
     var html = label(date === today() ? "This day" : pretty(date), list.length) +
-      listPanel(list, function (g) { return isDone(g.id, date); },
-        { date: date, empty: "Add your first item below, or set a daily goal that repeats." });
+      listPanel(list, function (g) { return dayDone(g, date); }, {
+        date: date,
+        action: function (g) { return g.borrowed ? '<span class="chip">week</span>' : ""; },
+        empty: "Add your first item below, or set a daily goal that repeats."
+      });
 
-    var soon = dated().filter(function (g) { return diff(g.due, date) <= 7; }).slice(0, 4);
+    var borrowed = {};
+    list.forEach(function (g) { if (g.borrowed) borrowed[g.id] = true; });
+    var soon = dated().filter(function (g) {
+      return !borrowed[g.id] && diff(g.due, date) <= 7;
+    }).slice(0, 4);
     if (soon.length) {
       html += label("Due within a week", soon.length) +
         '<div class="panel">' + soon.map(function (g) {
@@ -876,7 +915,7 @@
 
   /* ---------- header + tabs ---------- */
   var TIPS = {
-    today: "Tap a circle to check off, the text to edit. Press and hold a task to raise its priority, or tap its colour bar to cycle green → red → green. Anything you don't finish moves to tomorrow one level higher.",
+    today: "Tap a circle to check off, the text to edit. Press and hold a task to raise its priority, or tap its colour bar to cycle green → red → green. Anything you don't finish moves to tomorrow one level higher, and a weekly goal joins this list the day before it's due.",
     week: "Tap any day in the ribbon to jump to it.",
     goals: "Link weekly and daily goals to a long-term goal to fill its progress bar.",
     up: "Due dates from your weekly and long-term goals, soonest first."
@@ -1051,7 +1090,7 @@
     // Clear it on every press, so a hold can only ever swallow its own click.
     press.fired = false;
     var t = e.target.closest ? e.target.closest("[data-edit]") : null;
-    if (!t) return;
+    if (!t || t.dataset.nopri) return;
     press.id = t.dataset.edit;
     press.x = e.clientX;
     press.y = e.clientY;
